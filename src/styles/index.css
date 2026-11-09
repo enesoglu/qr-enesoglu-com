@@ -471,3 +471,8 @@ footer a {
   max-width: 320px;
   margin-inline: auto;
 }
+@media (prefers-color-scheme: dark) {
+  .shape-picker img {
+    filter: invert(1);
+  }
+}
