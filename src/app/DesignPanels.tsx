@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { renderShapePreview } from '../core/render';
 import { ColorInput, RadioGroup, ShapePicker } from '../components/Controls';
 import type { Fill, LogoOptions, QrDesign } from '../core/types';
 import { errorMessage, useAppStore } from './store';
@@ -149,6 +150,9 @@ export function ShapesPanel() {
       <h2>Shapes</h2>
       <ShapePicker
         label="Body"
+        thumbnail={(shape, idPrefix) =>
+          renderShapePreview('body', shape, { idPrefix })
+        }
         value={design.body.shape}
         options={['square', 'rounded', 'dot', 'diamond', 'fluid']}
         onChange={(shape) =>
@@ -157,6 +161,9 @@ export function ShapesPanel() {
       />
       <ShapePicker
         label="Corner frame"
+        thumbnail={(shape, idPrefix) =>
+          renderShapePreview('cornerFrame', shape, { idPrefix })
+        }
         value={design.cornerFrame.shape}
         options={['square', 'rounded', 'circle']}
         onChange={(shape) =>
@@ -168,6 +175,9 @@ export function ShapesPanel() {
       />
       <ShapePicker
         label="Corner dot"
+        thumbnail={(shape, idPrefix) =>
+          renderShapePreview('cornerDot', shape, { idPrefix })
+        }
         value={design.cornerDot.shape}
         options={['square', 'rounded', 'circle', 'diamond']}
         onChange={(shape) =>
