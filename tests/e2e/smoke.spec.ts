@@ -30,50 +30,49 @@ test('exports a decodable PNG and preserves transparent backgrounds', async ({
   page,
 }) => {
   await page.goto('/');
-  const initial = await page
-    .getByRole('img', { name: 'QR code preview' })
-    .getAttribute('src');
   await page.getByLabel('Text or URL').fill('PNG export verification');
-  await expect(
-    page.getByRole('img', { name: 'QR code preview' }),
-  ).not.toHaveAttribute('src', initial!);
-  const result = await page
-    .getByRole('img', { name: 'QR code preview' })
-    .evaluate(async (image: HTMLImageElement) => {
-      const exporterPath = '/src/core/export/png.ts';
-      const { svgToPngBlob } = await import(/* @vite-ignore */ exporterPath);
-      const svg = decodeURIComponent(image.src.split(',').slice(1).join(','));
-      const png: Blob = await svgToPngBlob(svg, 512);
-      const bitmap = await createImageBitmap(png);
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('Canvas unavailable');
-      context.drawImage(bitmap, 0, 0);
-      const data = Array.from(context.getImageData(0, 0, 512, 512).data);
-      bitmap.close();
-      const transparentSvg =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="10" height="10" fill="#000000"/></svg>';
-      const transparent: Blob = await svgToPngBlob(transparentSvg, 20);
-      const transparentBitmap = await createImageBitmap(transparent);
-      context.clearRect(0, 0, 512, 512);
-      context.drawImage(transparentBitmap, 0, 0);
-      const alpha = context.getImageData(19, 19, 1, 1).data[3];
-      transparentBitmap.close();
-      return {
-        data,
-        width: canvas.width,
-        height: canvas.height,
-        type: png.type,
-        alpha,
-      };
-    });
-  expect(result.type).toBe('image/png');
-  expect(result.alpha).toBe(0);
+  await page.getByRole('combobox', { name: /PNG size/ }).selectOption('512');
+  const pngEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download PNG' }).click();
+  const bytes = await readFile((await (await pngEvent).path())!);
+  const result = await page.evaluate(async (base64) => {
+    const bitmap = await createImageBitmap(
+      await (await fetch('data:image/png;base64,' + base64)).blob(),
+    );
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d')!;
+    context.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return {
+      data: Array.from(
+        context.getImageData(0, 0, canvas.width, canvas.height).data,
+      ),
+      width: canvas.width,
+      height: canvas.height,
+    };
+  }, bytes.toString('base64'));
   expect(
     jsQR(new Uint8ClampedArray(result.data), result.width, result.height)?.data,
   ).toBe('PNG export verification');
+  await page.getByRole('switch', { name: 'Transparent background' }).check();
+  const transparentEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download PNG' }).click();
+  const transparent = await readFile((await (await transparentEvent).path())!);
+  const alpha = await page.evaluate(async (base64) => {
+    const bitmap = await createImageBitmap(
+      await (await fetch('data:image/png;base64,' + base64)).blob(),
+    );
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d')!;
+    context.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return context.getImageData(0, 0, 1, 1).data[3];
+  }, transparent.toString('base64'));
+  expect(alpha).toBe(0);
 });
 
 test('downloads styled PNG, SVG and a three-row ZIP', async ({ page }) => {
@@ -129,7 +128,7 @@ test('generates 1000 PNGs at 1024 pixels with worker rasterization', async ({
     );
   await expect(page.getByText('1000 codes, 0 errors')).toBeVisible();
   const workerEvent = page.waitForEvent('worker', {
-    predicate: (worker) => worker.url().includes('/png.ts'),
+    predicate: (worker) => /\/png(?:-|\.ts)/.test(worker.url()),
   });
   const zipEvent = page.waitForEvent('download', { timeout: 110_000 });
   await page.getByRole('button', { name: 'Generate ZIP' }).click();
@@ -177,4 +176,101 @@ test('falls back to main-thread PNG export and cancels bulk jobs', async ({
   await expect(
     page.getByText('Generation cancelled.', { exact: true }),
   ).toBeVisible();
+});
+
+test('rehydrates preferences while discarding sensitive content and resets the saved design', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByLabel('Text or URL').fill('private-text-draft');
+  await page
+    .getByRole('group', { name: 'Body', exact: true })
+    .getByRole('radio', { name: 'rounded' })
+    .check();
+  await page.getByLabel('Body color', { exact: true }).fill('#153b65');
+  await page.getByRole('radio', { name: 'svg', exact: true }).check();
+  await page.getByRole('radio', { name: 'Wi-Fi', exact: true }).check();
+  await page
+    .getByLabel('Network name', { exact: true })
+    .fill('private-network');
+  await page.getByLabel('Password', { exact: true }).fill('private-password');
+  const stored = await page.evaluate(() =>
+    localStorage.getItem('qr-enesoglu-com:v1'),
+  );
+  expect(stored).not.toContain('private-');
+  await page.reload();
+  await expect(
+    page.getByRole('radio', { name: 'Wi-Fi', exact: true }),
+  ).toBeChecked();
+  await expect(page.getByLabel('Network name', { exact: true })).toHaveValue(
+    '',
+  );
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Body color', { exact: true })).toHaveValue(
+    '#153b65',
+  );
+  await expect(
+    page.getByRole('radio', { name: 'svg', exact: true }),
+  ).toBeChecked();
+  await page.getByRole('radio', { name: 'Text', exact: true }).check();
+  await expect(page.getByLabel('Text or URL')).toHaveValue(
+    'https://example.com',
+  );
+  await page.getByRole('button', { name: 'Reset design' }).click();
+  await page.reload();
+  await expect(page.getByLabel('Body color', { exact: true })).toHaveValue(
+    '#000000',
+  );
+  await expect(
+    page
+      .getByRole('group', { name: 'Body', exact: true })
+      .getByRole('radio', { name: 'square' }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('radio', { name: 'svg', exact: true }),
+  ).toBeChecked();
+});
+
+test('encodes and scans each content kind in the editor', async ({ page }) => {
+  await page.goto('/');
+  const examples = [
+    {
+      kind: 'Wi-Fi',
+      fields: {
+        'Network name': 'Example network',
+        Password: 'example-password',
+      },
+    },
+    {
+      kind: 'Contact',
+      fields: {
+        'First name': 'Example',
+        'Last name': 'Person',
+        'Phone number': '+12025550123',
+      },
+    },
+    {
+      kind: 'Email',
+      fields: {
+        'Recipient email': 'example@example.org',
+        Subject: 'Example subject',
+        Message: 'Example message',
+      },
+    },
+    { kind: 'Phone', fields: { 'Phone number': '+12025550123' } },
+    {
+      kind: 'SMS',
+      fields: { 'Phone number': '+12025550123', Message: 'Example message' },
+    },
+    { kind: 'Text', fields: { 'Text or URL': 'https://example.org' } },
+  ];
+  for (const example of examples) {
+    await page.getByRole('radio', { name: example.kind, exact: true }).check();
+    for (const [label, value] of Object.entries(example.fields))
+      await page.getByLabel(label, { exact: true }).fill(value!);
+    await expect(page.getByText('Scannable', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Download PNG' }),
+    ).toBeEnabled();
+  }
 });
