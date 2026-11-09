@@ -1,4 +1,13 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { DEFAULT_DESIGN } from '../core/defaults';
+import {
+  preferencesKey,
+  preferencesStorage,
+  readPreferences,
+  savedPreferences,
+  migratePreferences,
+} from './preferences';
 import {
   createEmptyPayload,
   encodePayload,
@@ -29,15 +38,7 @@ export const kindLabels = {
   sms: 'SMS',
 };
 export function defaultDesign(): QrDesign {
-  return {
-    errorCorrection: 'M',
-    margin: 4,
-    body: { shape: 'square', fill: { type: 'solid', color: '#000000' } },
-    cornerFrame: { shape: 'square', color: null },
-    cornerDot: { shape: 'square', color: null },
-    background: { color: '#ffffff', transparent: false },
-    logo: null,
-  };
+  return structuredClone(DEFAULT_DESIGN);
 }
 interface AppState {
   bulkInput: string;
@@ -55,52 +56,70 @@ interface AppState {
   setLogo: (logo: LogoOptions | null) => boolean;
   resetDesign: () => void;
 }
-export const useAppStore = create<AppState>((set) => ({
-  bulkInput: '',
-  setBulkInput: (bulkInput) => set({ bulkInput }),
-  payloads: {
-    text: { kind: 'text', text: 'https://example.com' },
-    wifi: createEmptyPayload('wifi'),
-    contact: createEmptyPayload('contact'),
-    email: createEmptyPayload('email'),
-    phone: createEmptyPayload('phone'),
-    sms: createEmptyPayload('sms'),
-  },
-  activeKind: 'text',
-  design: defaultDesign(),
-  exportOptions: { format: 'png', sizePx: 1024 },
-  mode: 'Single',
-  setKind: (activeKind) => set({ activeKind }),
-  updatePayload: (field, value) =>
-    set((state) => ({
-      payloads: {
-        ...state.payloads,
-        [state.activeKind]: {
-          ...state.payloads[state.activeKind],
-          [field]: value,
+export function createAppStore() {
+  return create<AppState>()(
+    persist<AppState, [], [], ReturnType<typeof savedPreferences>>(
+      (set) => ({
+        bulkInput: '',
+        setBulkInput: (bulkInput) => set({ bulkInput }),
+        payloads: {
+          text: { kind: 'text', text: 'https://example.com' },
+          wifi: createEmptyPayload('wifi'),
+          contact: createEmptyPayload('contact'),
+          email: createEmptyPayload('email'),
+          phone: createEmptyPayload('phone'),
+          sms: createEmptyPayload('sms'),
         },
+        activeKind: 'text',
+        design: defaultDesign(),
+        exportOptions: { format: 'png', sizePx: 1024 },
+        mode: 'Single',
+        setKind: (activeKind) => set({ activeKind }),
+        updatePayload: (field, value) =>
+          set((state) => ({
+            payloads: {
+              ...state.payloads,
+              [state.activeKind]: {
+                ...state.payloads[state.activeKind],
+                [field]: value,
+              },
+            },
+          })),
+        setDesign: (design) => set({ design }),
+        setExport: (options) =>
+          set((state) => ({
+            exportOptions: { ...state.exportOptions, ...options },
+          })),
+        setMode: (mode) => set({ mode }),
+        setLogo: (logo) => {
+          let raised = false;
+          set((state) => {
+            raised =
+              !!logo && ['L', 'M'].includes(state.design.errorCorrection);
+            return {
+              design: {
+                ...state.design,
+                logo,
+                errorCorrection: raised ? 'H' : state.design.errorCorrection,
+              },
+            };
+          });
+          return raised;
+        },
+        resetDesign: () => set({ design: defaultDesign() }),
+      }),
+      {
+        name: preferencesKey,
+        version: 1,
+        storage: createJSONStorage(() => preferencesStorage),
+        partialize: savedPreferences,
+        migrate: migratePreferences,
+        merge: (saved, current) => ({ ...current, ...readPreferences(saved) }),
       },
-    })),
-  setDesign: (design) => set({ design }),
-  setExport: (options) =>
-    set((state) => ({ exportOptions: { ...state.exportOptions, ...options } })),
-  setMode: (mode) => set({ mode }),
-  setLogo: (logo) => {
-    let raised = false;
-    set((state) => {
-      raised = !!logo && ['L', 'M'].includes(state.design.errorCorrection);
-      return {
-        design: {
-          ...state.design,
-          logo,
-          errorCorrection: raised ? 'H' : state.design.errorCorrection,
-        },
-      };
-    });
-    return raised;
-  },
-  resetDesign: () => set({ design: defaultDesign() }),
-}));
+    ),
+  );
+}
+export const useAppStore = createAppStore();
 export function errorMessage(error: unknown): string {
   if (error instanceof QrDataTooLongError)
     return 'Content is too long. Shorten it or choose a lower error correction level.';
