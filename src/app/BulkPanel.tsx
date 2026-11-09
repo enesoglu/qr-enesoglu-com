@@ -8,7 +8,13 @@ import { ExportOptions, validPngSize } from './ExportOptions';
 export function BulkPanel() {
   const { bulkInput, setBulkInput, design, exportOptions, setMode } =
     useAppStore();
-  const parsed = useMemo(() => parseBatchInput(bulkInput), [bulkInput]);
+  const [settledInput, setSettledInput] = useState(bulkInput);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledInput(bulkInput), 100);
+    return () => clearTimeout(timer);
+  }, [bulkInput]);
+  const pending = settledInput !== bulkInput;
+  const parsed = useMemo(() => parseBatchInput(settledInput), [settledInput]);
   const preview = useMemo(() => {
     try {
       return parsed.rows[0]
@@ -54,7 +60,7 @@ export function BulkPanel() {
     }
   }
   async function generate() {
-    if (controller.current || !parsed.rows.length) return;
+    if (controller.current || pending || !parsed.rows.length) return;
     uploadRequest.current++;
     const aborter = new AbortController();
     controller.current = aborter;
@@ -134,7 +140,9 @@ export function BulkPanel() {
         />
       </label>
       <p role="status">
-        {parsed.rows.length} codes, {parsed.errors.length} errors
+        {pending
+          ? 'Checking input…'
+          : `${parsed.rows.length} ${parsed.rows.length === 1 ? 'code' : 'codes'}, ${parsed.errors.length} ${parsed.errors.length === 1 ? 'error' : 'errors'}`}
       </p>
       {!!parsed.errors.length && (
         <ul>
@@ -172,6 +180,7 @@ export function BulkPanel() {
         className="primary"
         disabled={
           !!progress ||
+          pending ||
           !parsed.rows.length ||
           (exportOptions.format === 'png' &&
             !validPngSize(exportOptions.sizePx))
