@@ -1,48 +1,65 @@
-import { useState } from 'react';
-import { DEFAULT_DESIGN } from '../core/defaults';
-import { encodePayload } from '../core/payloads';
-import { renderSvg } from '../core/render';
+import { RadioGroup } from '../components/Controls';
+import { ContentPanel } from './ContentPanel';
+import {
+  AdvancedPanel,
+  ColorsPanel,
+  LogoPanel,
+  ShapesPanel,
+} from './DesignPanels';
+import { PreviewCard } from './PreviewCard';
+import { useAppStore } from './store';
 
+const repository = 'https://github.com/enesoglu/qr-enesoglu-com';
 export function App() {
-  const [text, setText] = useState('https://example.com');
-  let svg = '';
-  let error = '';
-  if (text) {
-    try {
-      svg = renderSvg(encodePayload({ kind: 'text', text }), DEFAULT_DESIGN, {
-        sizePx: 288,
-      });
-    } catch (cause) {
-      error =
-        cause instanceof Error
-          ? cause.message
-          : 'Unable to generate a QR code.';
-    }
-  }
+  const { mode, setMode } = useAppStore();
   return (
-    <main className="mx-auto max-w-xl space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">QR Generator</h1>
-      <label className="block" htmlFor="content">
-        Text or URL
-      </label>
-      <textarea
-        id="content"
-        className="block w-full border p-2"
-        rows={4}
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-      />
-      {error && <p role="alert">{error}</p>}
-      {svg ? (
-        <img
-          alt="QR code preview"
-          width={288}
-          height={288}
-          src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
-        />
-      ) : (
-        !error && <p>Enter text to generate a QR code.</p>
-      )}
-    </main>
+    <div className="app-shell">
+      <header>
+        <h1>QR Generator</h1>
+        <a href={repository} aria-label="View source on GitHub">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03A9.6 9.6 0 0 1 12 6.82c.85 0 1.71.11 2.51.34 1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2Z" />
+          </svg>
+        </a>
+      </header>
+      <main>
+        <div className="mode-switch">
+          <RadioGroup
+            label="Mode"
+            value={mode}
+            options={['Single', 'Bulk']}
+            onChange={setMode}
+          />
+        </div>
+        {mode === 'Single' ? (
+          <div className="workspace">
+            <div className="controls">
+              <ContentPanel />
+              <ColorsPanel />
+              <ShapesPanel />
+              <LogoPanel />
+              <AdvancedPanel />
+            </div>
+            <PreviewCard />
+          </div>
+        ) : (
+          <section className="panel bulk-panel">
+            <h2>Bulk</h2>
+            <p>Bulk generation is not available yet.</p>
+            <button onClick={() => setMode('Single')}>Return to Single</button>
+          </section>
+        )}
+      </main>
+      <footer>
+        Runs entirely in your browser. Nothing is uploaded.{' '}
+        <a href={repository}>GitHub</a>
+      </footer>
+    </div>
   );
 }

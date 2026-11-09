@@ -1,1 +1,473 @@
 @import 'tailwindcss';
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #27272a;
+  background: #fafafa;
+  font-synthesis: none;
+  --surface: #fff;
+  --border: #d4d4d8;
+  --muted: #52525b;
+  --subtle: #f4f4f5;
+  --focus: #2563eb;
+  --primary: #18181b;
+  --on-primary: #fff;
+  color-scheme: light dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+select,
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'],
+input[type='color'] {
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+button,
+input:not(
+  [type='checkbox'],
+  [type='radio'],
+  [type='range'],
+  [type='file'],
+  [type='color']
+),
+textarea,
+select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: inherit;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+button:hover {
+  background: var(--subtle);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+input,
+select,
+textarea {
+  max-width: 100%;
+  min-width: 0;
+}
+input[type='number'],
+.color-input input {
+  font-variant-numeric: tabular-nums;
+}
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--primary);
+  min-height: 32px;
+}
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+textarea {
+  resize: vertical;
+  width: 100%;
+}
+.app-shell {
+  max-width: 1088px;
+  margin: auto;
+  padding: 0 32px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 88px;
+  border-bottom: 1px solid var(--border);
+}
+header a {
+  padding: 12px;
+  border-radius: 8px;
+}
+h1 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 24px;
+}
+p {
+  line-height: 1.5;
+}
+.mode-switch {
+  padding: 32px 0;
+}
+.mode-switch fieldset {
+  max-width: 200px;
+}
+.mode-switch legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+.controls {
+  min-width: 0;
+}
+.panel {
+  padding: 0 0 32px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+.panel > :last-child {
+  margin-bottom: 0;
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 24px;
+  min-width: 0;
+}
+legend {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border: 1px solid var(--border);
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--surface);
+}
+.segments label {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 5px;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.segments label.selected {
+  background: var(--subtle);
+  font-weight: 600;
+}
+.segments input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.segments label:has(:focus-visible),
+.shape-picker label:has(:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.fields.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.color-input {
+  display: flex;
+  gap: 8px;
+}
+.color-input input[type='color'] {
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.color-input input[type='text'],
+.color-input input:not([type]) {
+  width: 100%;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  margin: 0 0 20px;
+  min-height: 28px;
+}
+small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+[aria-invalid='true'] {
+  border-color: #b91c1c !important;
+}
+.shape-picker > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.shape-picker label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 80px;
+  padding: 12px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.shape-picker label.selected {
+  border-color: var(--primary);
+  background: var(--subtle);
+}
+.shape-picker svg {
+  fill: currentColor;
+}
+.shape-picker input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.drop-zone span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.drop-zone input {
+  width: 100%;
+  font-size: 12px;
+}
+.preview-card {
+  position: sticky;
+  top: 24px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px #00000005;
+}
+.preview-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.preview-heading span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.preview-image {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.preview-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.preview-image p {
+  color: #52525b;
+  padding: 24px;
+  font-size: 13px;
+}
+.checkerboard {
+  background-color: #fff;
+  background-image: conic-gradient(
+    #e4e4e7 25%,
+    #fff 0 50%,
+    #e4e4e7 0 75%,
+    #fff 0
+  );
+  background-size: 16px 16px;
+}
+.scan-status,
+.status {
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 18px;
+  margin: 16px 0;
+}
+.export-controls {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.export-controls button {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+button.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+.bulk-panel {
+  padding: 32px 0 80px;
+}
+footer {
+  padding: 24px 0 32px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  line-height: 1.8;
+}
+footer a {
+  margin-left: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #e4e4e7;
+    background: #18181b;
+    --surface: #202023;
+    --border: #52525b;
+    --muted: #a1a1aa;
+    --subtle: #303034;
+    --primary: #fafafa;
+    --on-primary: #18181b;
+    --focus: #93c5fd;
+  }
+}
+@media (max-width: 1023px) {
+  .app-shell {
+    max-width: 624px;
+    padding: 0 20px;
+  }
+  header {
+    height: 72px;
+  }
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .preview-card {
+    order: -1;
+    width: 100%;
+    position: sticky;
+    top: -1px;
+    z-index: 2;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: minmax(96px, 136px) minmax(0, 1fr);
+    column-gap: 20px;
+  }
+  .preview-heading {
+    display: none;
+  }
+  .preview-image {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+  .scan-status {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 8px 0 0;
+  }
+  .export-controls {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    border: 0;
+    padding: 0;
+  }
+  .export-controls fieldset,
+  .export-controls .field {
+    margin-bottom: 8px;
+  }
+  .export-controls .field {
+    gap: 4px;
+  }
+  .export-controls .status {
+    margin: 0;
+  }
+  .export-controls legend {
+    margin-bottom: 4px;
+  }
+  .controls {
+    width: 100%;
+  }
+}
+@media (max-width: 400px) {
+  .app-shell {
+    padding: 0 16px;
+  }
+  .preview-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .fields.two {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .segments label {
+    padding: 4px 6px;
+  }
+}
+
+.preview-image {
+  width: 100%;
+  max-width: 320px;
+  margin-inline: auto;
+}
