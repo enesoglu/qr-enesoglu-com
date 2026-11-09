@@ -40,6 +40,8 @@ export function defaultDesign(): QrDesign {
   };
 }
 interface AppState {
+  bulkInput: string;
+  setBulkInput: (bulkInput: string) => void;
   payloads: Record<PayloadKind, Payload>;
   activeKind: PayloadKind;
   design: QrDesign;
@@ -54,6 +56,8 @@ interface AppState {
   resetDesign: () => void;
 }
 export const useAppStore = create<AppState>((set) => ({
+  bulkInput: '',
+  setBulkInput: (bulkInput) => set({ bulkInput }),
   payloads: {
     text: { kind: 'text', text: 'https://example.com' },
     wifi: createEmptyPayload('wifi'),

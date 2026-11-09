@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { RadioGroup } from '../components/Controls';
 import { ContentPanel } from './ContentPanel';
 import {
@@ -9,6 +10,9 @@ import {
 import { PreviewCard } from './PreviewCard';
 import { useAppStore } from './store';
 
+const BulkPanel = lazy(() =>
+  import('./BulkPanel').then((module) => ({ default: module.BulkPanel })),
+);
 const repository = 'https://github.com/enesoglu/qr-enesoglu-com';
 export function App() {
   const { mode, setMode } = useAppStore();
@@ -49,11 +53,9 @@ export function App() {
             <PreviewCard />
           </div>
         ) : (
-          <section className="panel bulk-panel">
-            <h2>Bulk</h2>
-            <p>Bulk generation is not available yet.</p>
-            <button onClick={() => setMode('Single')}>Return to Single</button>
-          </section>
+          <Suspense fallback={<p role="status">Loading bulk tools…</p>}>
+            <BulkPanel />
+          </Suspense>
         )}
       </main>
       <footer>

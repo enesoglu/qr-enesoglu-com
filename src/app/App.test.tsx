@@ -150,12 +150,10 @@ it('downloads an SVG with the content kind, timestamp and extension', async () =
     'qr-wifi-20260102-030405.png',
   );
 });
-it('shows the bulk placeholder and returns to the single editor', () => {
+it('opens bulk tools and returns to the single editor', async () => {
   render(<App />);
   fireEvent.click(screen.getByRole('radio', { name: 'Bulk' }));
-  expect(
-    screen.getByText('Bulk generation is not available yet.'),
-  ).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Return to Single' }));
+  await screen.findByText('0 codes, 0 errors');
+  fireEvent.click(screen.getByRole('button', { name: 'Edit design' }));
   expect(screen.getByLabelText('Text or URL')).toBeTruthy();
 });

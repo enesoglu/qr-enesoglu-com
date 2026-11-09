@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { unzipSync } from 'fflate';
 import jsQR from 'jsqr';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
@@ -72,4 +74,107 @@ test('exports a decodable PNG and preserves transparent backgrounds', async ({
   expect(
     jsQR(new Uint8ClampedArray(result.data), result.width, result.height)?.data,
   ).toBe('PNG export verification');
+});
+
+test('downloads styled PNG, SVG and a three-row ZIP', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Text or URL').fill('https://example.org/download');
+  await page
+    .getByRole('group', { name: 'Body', exact: true })
+    .getByRole('radio', { name: 'rounded' })
+    .check();
+  await page.getByLabel('Body color', { exact: true }).fill('#153b65');
+  await expect(page.getByText('Scannable', { exact: true })).toBeVisible();
+  const pngEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download PNG' }).click();
+  expect((await pngEvent).suggestedFilename()).toMatch(/\.png$/);
+  await page.getByRole('radio', { name: 'svg', exact: true }).check();
+  const svgEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download SVG' }).click();
+  expect((await svgEvent).suggestedFilename()).toMatch(/\.svg$/);
+  await page.getByRole('radio', { name: 'Bulk', exact: true }).check();
+  await page
+    .getByRole('textbox')
+    .fill(
+      'data,filename\nhttps://example.org/one,one\nhttps://example.org/two,two\nhttps://example.org/three,three',
+    );
+  await expect(page.getByText('3 codes, 0 errors')).toBeVisible();
+  const zipEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Generate ZIP' }).click();
+  const download = await zipEvent;
+  expect(download.suggestedFilename()).toMatch(/^qr-codes-\d+\.zip$/);
+  const files = unzipSync(await readFile((await download.path())!));
+  expect(Object.keys(files).sort()).toEqual([
+    'one.svg',
+    'three.svg',
+    'two.svg',
+  ]);
+  expect(new TextDecoder().decode(files['one.svg'])).toContain('#153b65');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test('generates 1000 PNGs at 1024 pixels with worker rasterization', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await page.goto('/');
+  await page.getByRole('radio', { name: 'Bulk', exact: true }).check();
+  await page
+    .getByRole('textbox')
+    .fill(
+      Array.from(
+        { length: 1000 },
+        (_, index) => `https://example.org/${index}`,
+      ).join('\n'),
+    );
+  await expect(page.getByText('1000 codes, 0 errors')).toBeVisible();
+  const workerEvent = page.waitForEvent('worker', {
+    predicate: (worker) => worker.url().includes('/png.ts'),
+  });
+  const zipEvent = page.waitForEvent('download', { timeout: 110_000 });
+  await page.getByRole('button', { name: 'Generate ZIP' }).click();
+  await workerEvent;
+  await expect(
+    page.getByRole('button', { name: 'Cancel', exact: true }),
+  ).toBeEnabled();
+  const download = await zipEvent;
+  const files = unzipSync(await readFile((await download.path())!));
+  expect(Object.keys(files)).toHaveLength(1000);
+  for (const data of Object.values(files)) {
+    expect(Array.from(data.slice(0, 8))).toEqual([
+      137, 80, 78, 71, 13, 10, 26, 10,
+    ]);
+    const dimensions = new DataView(
+      data.buffer,
+      data.byteOffset,
+      data.byteLength,
+    );
+    expect(dimensions.getUint32(16)).toBe(1024);
+    expect(dimensions.getUint32(20)).toBe(1024);
+  }
+});
+
+test('falls back to main-thread PNG export and cancels bulk jobs', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'OffscreenCanvas', { value: undefined });
+  });
+  await page.goto('/');
+  await page.getByRole('radio', { name: 'Bulk', exact: true }).check();
+  await page.getByRole('textbox').fill('first\nsecond\nthird');
+  const zipEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Generate ZIP' }).click();
+  const files = unzipSync(await readFile((await (await zipEvent).path())!));
+  expect(Object.keys(files)).toHaveLength(3);
+  await page
+    .getByRole('textbox')
+    .fill(
+      Array.from({ length: 1000 }, (_, index) => `row ${index}`).join('\n'),
+    );
+  await page.getByRole('button', { name: 'Generate ZIP' }).click();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(
+    page.getByText('Generation cancelled.', { exact: true }),
+  ).toBeVisible();
 });
