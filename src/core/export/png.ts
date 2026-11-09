@@ -15,6 +15,7 @@ export async function svgToPngBlob(svg: string, sizePx: number): Promise<Blob> {
     canvas.height = sizePx;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Canvas rendering is unavailable.');
+    context.imageSmoothingEnabled = false;
     context.drawImage(image, 0, 0, sizePx, sizePx);
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
