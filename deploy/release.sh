@@ -53,7 +53,7 @@ fi
 
 # rsync invokes exactly one SSH connection and never retries.
 printf -v rsync_ssh '%q ' ssh "${ssh_options[@]}"
-rsync -rlt --delete --chmod=D755,F644 -e "$rsync_ssh" -- \
+rsync -rlt --delete --chmod=D755,F644 --perms -e "$rsync_ssh" -- \
   "$source_dir/" "$target:/srv/qr-enesoglu-com/releases/$RELEASE_SHA/"
 ssh "${ssh_options[@]}" "$target" bash -s -- "$RELEASE_SHA" <<'REMOTE'
 set -euo pipefail
