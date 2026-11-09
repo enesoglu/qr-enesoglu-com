@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 export function RadioGroup<T extends string>({
   label,
@@ -97,11 +97,19 @@ export function ShapePicker<T extends string>({
   thumbnail: (shape: T, idPrefix: string) => string;
 }) {
   const name = useId();
+  const thumbnails = useMemo(
+    () =>
+      options.map(
+        (shape) =>
+          `data:image/svg+xml;charset=utf-8,${encodeURIComponent(thumbnail(shape, `shape-${name.replace(/[^a-zA-Z0-9_-]/g, '')}-${shape}`))}`,
+      ),
+    [name, options, thumbnail],
+  );
   return (
     <fieldset className="shape-picker">
       <legend>{label}</legend>
       <div>
-        {options.map((shape) => (
+        {options.map((shape, index) => (
           <label key={shape} className={value === shape ? 'selected' : ''}>
             <input
               type="radio"
@@ -114,7 +122,7 @@ export function ShapePicker<T extends string>({
               aria-hidden="true"
               width="30"
               height="30"
-              src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(thumbnail(shape, `shape-${name.replace(/[^a-zA-Z0-9_-]/g, '')}-${shape}`))}`}
+              src={thumbnails[index]}
             />
             <span>{shape}</span>
           </label>

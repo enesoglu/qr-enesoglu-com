@@ -28,12 +28,16 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
-it('parses row summaries with original line diagnostics and preserves input while editing design', () => {
+it('parses row summaries with original line diagnostics and preserves input while editing design', async () => {
   render(<BulkPanel />);
   fireEvent.change(screen.getByRole('textbox'), {
     target: { value: 'data,filename\none,first\n,missing\ntwo,second' },
   });
-  expect(screen.getByText('2 codes, 1 errors')).toBeTruthy();
+  expect(
+    screen.getByRole<HTMLButtonElement>('button', { name: 'Generate ZIP' })
+      .disabled,
+  ).toBe(true);
+  expect(await screen.findByText('2 codes, 1 error')).toBeTruthy();
   expect(screen.getByText('Line 3: Data is required')).toBeTruthy();
   expect(screen.getByAltText('First bulk code preview')).toBeTruthy();
   fireEvent.click(screen.getByText('Edit design'));

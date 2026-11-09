@@ -4,6 +4,20 @@ import { ColorInput, RadioGroup, ShapePicker } from '../components/Controls';
 import type { Fill, LogoOptions, QrDesign } from '../core/types';
 import { errorMessage, useAppStore } from './store';
 
+const bodyThumbnail = (shape: QrDesign['body']['shape'], idPrefix: string) =>
+  renderShapePreview('body', shape, { idPrefix });
+const frameThumbnail = (
+  shape: QrDesign['cornerFrame']['shape'],
+  idPrefix: string,
+) => renderShapePreview('cornerFrame', shape, { idPrefix });
+const dotThumbnail = (
+  shape: QrDesign['cornerDot']['shape'],
+  idPrefix: string,
+) => renderShapePreview('cornerDot', shape, { idPrefix });
+const bodyShapes = ['square', 'rounded', 'dot', 'diamond', 'fluid'] as const;
+const frameShapes = ['square', 'rounded', 'circle'] as const;
+const dotShapes = ['square', 'rounded', 'circle', 'diamond'] as const;
+
 export function ColorsPanel() {
   const { design, setDesign } = useAppStore();
   const fill = design.body.fill;
@@ -150,22 +164,18 @@ export function ShapesPanel() {
       <h2>Shapes</h2>
       <ShapePicker
         label="Body"
-        thumbnail={(shape, idPrefix) =>
-          renderShapePreview('body', shape, { idPrefix })
-        }
+        thumbnail={bodyThumbnail}
         value={design.body.shape}
-        options={['square', 'rounded', 'dot', 'diamond', 'fluid']}
+        options={bodyShapes}
         onChange={(shape) =>
           setDesign({ ...design, body: { ...design.body, shape } })
         }
       />
       <ShapePicker
         label="Corner frame"
-        thumbnail={(shape, idPrefix) =>
-          renderShapePreview('cornerFrame', shape, { idPrefix })
-        }
+        thumbnail={frameThumbnail}
         value={design.cornerFrame.shape}
-        options={['square', 'rounded', 'circle']}
+        options={frameShapes}
         onChange={(shape) =>
           setDesign({
             ...design,
@@ -175,11 +185,9 @@ export function ShapesPanel() {
       />
       <ShapePicker
         label="Corner dot"
-        thumbnail={(shape, idPrefix) =>
-          renderShapePreview('cornerDot', shape, { idPrefix })
-        }
+        thumbnail={dotThumbnail}
         value={design.cornerDot.shape}
-        options={['square', 'rounded', 'circle', 'diamond']}
+        options={dotShapes}
         onChange={(shape) =>
           setDesign({ ...design, cornerDot: { ...design.cornerDot, shape } })
         }

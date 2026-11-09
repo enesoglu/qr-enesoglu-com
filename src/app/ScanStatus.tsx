@@ -59,7 +59,16 @@ export function ScanStatus({
       </p>
       {!!result?.warnings.length && (
         <details>
-          <summary>All scan warnings ({result.warnings.length})</summary>
+          <summary
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.currentTarget.parentElement?.removeAttribute('open');
+                event.stopPropagation();
+              }
+            }}
+          >
+            All scan warnings ({result.warnings.length})
+          </summary>
           <ul>
             {result.warnings.map((warning) => (
               <li key={warning}>{warning}</li>
