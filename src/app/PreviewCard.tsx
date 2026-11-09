@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
+import { ScanStatus } from './ScanStatus';
 import { svgToPngBlob } from '../core/export/png';
 import { RadioGroup } from '../components/Controls';
-import { errorMessage, kindLabels, previewSvg, useAppStore } from './store';
+import {
+  encodedData,
+  errorMessage,
+  kindLabels,
+  previewSvg,
+  useAppStore,
+} from './store';
 
 export function downloadFilename(
   kind: string,
@@ -104,11 +111,10 @@ export function PreviewCard() {
           <p>{rendered.error || 'Enter text to generate a QR code.'}</p>
         )}
       </div>
-      <p className="scan-status" role="status">
-        {pending
-          ? 'Updating preview…'
-          : rendered.error || 'Scan check is not available yet.'}
-      </p>
+      <ScanStatus
+        svg={pending ? '' : rendered.svg}
+        expected={encodedData({ payloads, activeKind }).data}
+      />
       <div className="export-controls">
         <RadioGroup
           label="Format"

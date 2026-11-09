@@ -33,7 +33,7 @@ Use Node from `.nvmrc` and pnpm via Corepack. Run `corepack enable` once when se
 - `src/core/defaults.ts`: default design; `payloads/`: encoding and validation; `render/`: matrix encoding and SVG; `export/`: rasterization and scanning; `batch/`: input parsing and ZIP.
 - `src/app/`: React layout, state, and feature panels. `src/components/`: reusable UI primitives. `src/styles/`: CSS.
 - `tests/e2e/`: browser tests. `docs/architecture.md`: data flow and module responsibilities.
-- `.worktrees/`: ignored parallel checkouts, excluded from TypeScript, ESLint, Vitest, and Prettier. `.agent/`: ignored working notes and local tools.
+- `.agent/`: ignored working notes and local tools. The Codex app manages worktrees; archive them through the app.
 
 Keep `src/core` framework-free; ESLint forbids React imports there. Browser-only APIs belong only in `src/core/export/png.ts` and the browser wrapper in `src/core/export/scan.ts`; keep decoding and contrast math pure. Build tools and tests may use Node APIs, but application code must run entirely in the browser.
 

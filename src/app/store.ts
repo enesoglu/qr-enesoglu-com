@@ -100,8 +100,6 @@ export const useAppStore = create<AppState>((set) => ({
 export function errorMessage(error: unknown): string {
   if (error instanceof QrDataTooLongError)
     return 'Content is too long. Shorten it or choose a lower error correction level.';
-  if (error instanceof Error && error.name === 'NotImplementedError')
-    return 'This feature is not available yet.';
   return error instanceof Error
     ? error.message
     : 'Unable to generate a QR code.';

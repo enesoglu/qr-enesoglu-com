@@ -88,7 +88,7 @@ export function renderSvg(
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${pixels}" height="${pixels}" viewBox="0 0 ${extent} ${extent}" ${metadata}>${paint.defs}${background}${body}${corners}${logo}</svg>`;
 }
 
-type PreviewOptions = { sizePx?: number; color?: string };
+type PreviewOptions = { sizePx?: number; color?: string; idPrefix?: string };
 export function renderShapePreview(
   kind: 'body',
   shape: BodyShape,
@@ -127,5 +127,5 @@ export function renderShapePreview(
   } else if (kind === 'cornerFrame')
     path = cornerFramePath(shape as CornerFrameShape, 1, 1);
   else path = cornerDotPath(shape as CornerDotShape, 3, 3);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 9 9"><path fill="${color(opts?.color ?? '#000000')}" fill-rule="${kind === 'cornerFrame' ? 'evenodd' : 'nonzero'}" d="${path}"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 9 9"${opts?.idPrefix ? ` id="${escapeAttribute(opts.idPrefix)}"` : ''}><path fill="${color(opts?.color ?? '#000000')}" fill-rule="${kind === 'cornerFrame' ? 'evenodd' : 'nonzero'}" d="${path}"/></svg>`;
 }

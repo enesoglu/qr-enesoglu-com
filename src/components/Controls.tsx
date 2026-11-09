@@ -88,11 +88,13 @@ export function ShapePicker<T extends string>({
   value,
   options,
   onChange,
+  thumbnail,
 }: {
   label: string;
   value: T;
   options: readonly T[];
   onChange: (shape: T) => void;
+  thumbnail: (shape: T, idPrefix: string) => string;
 }) {
   const name = useId();
   return (
@@ -107,23 +109,13 @@ export function ShapePicker<T extends string>({
               checked={value === shape}
               onChange={() => onChange(shape)}
             />
-            <svg aria-hidden="true" viewBox="0 0 32 32" width="30" height="30">
-              {shape === 'dot' || shape === 'circle' ? (
-                <circle cx="16" cy="16" r="11" />
-              ) : shape === 'diamond' ? (
-                <path d="M16 3 29 16 16 29 3 16Z" />
-              ) : shape === 'fluid' ? (
-                <path d="M5 5h10v6h12v16H5Z" />
-              ) : (
-                <rect
-                  x="5"
-                  y="5"
-                  width="22"
-                  height="22"
-                  rx={shape === 'rounded' ? 7 : 0}
-                />
-              )}
-            </svg>
+            <img
+              alt=""
+              aria-hidden="true"
+              width="30"
+              height="30"
+              src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(thumbnail(shape, `shape-${name.replace(/[^a-zA-Z0-9_-]/g, '')}-${shape}`))}`}
+            />
             <span>{shape}</span>
           </label>
         ))}
