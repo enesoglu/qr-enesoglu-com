@@ -1,12 +1,7 @@
 import { NotImplementedError } from '../errors';
-import type { BatchOptions, BatchParseResult, BatchRow } from '../types';
+import type { BatchOptions, BatchRow } from '../types';
 
-export function parseBatchInput(
-  _input: string,
-  _opts?: { maxRows?: number },
-): BatchParseResult {
-  throw new NotImplementedError('Batch parsing');
-}
+export { parseBatchInput } from './parse';
 
 export async function createBatchZip(
   _rows: BatchRow[],
