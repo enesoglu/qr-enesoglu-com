@@ -1,98 +1,131 @@
-import QRCode from 'qrcode';
-import type { QrDesign } from '../types';
-
-export class QrDataTooLongError extends Error {
-  constructor(options?: ErrorOptions) {
-    super(
-      'The content is too long for a QR code at this error correction level.',
-      options,
-    );
-    this.name = 'QrDataTooLongError';
-  }
-}
-
-function color(value: string): string {
-  if (!/^#[\da-f]{6}$/i.test(value))
-    throw new Error('Colors must use #rrggbb notation.');
-  return value;
-}
+import type {
+  BodyShape,
+  CornerDotShape,
+  CornerFrameShape,
+  QrDesign,
+} from '../types';
+import { createMatrix } from './matrix';
+import {
+  bodyModule,
+  bodyPath,
+  cornerDotPath,
+  cornerFramePath,
+  logoBox,
+} from './shapes';
+import { color, escapeAttribute, svgFill } from './fill';
+export { QrDataTooLongError } from './matrix';
 
 export function renderSvg(
   data: string,
   design: QrDesign,
   opts?: { idPrefix?: string; sizePx?: number },
 ): string {
-  if (!data) throw new Error('Enter some content to generate a QR code.');
   if (
     !Number.isInteger(design.margin) ||
     design.margin < 0 ||
     design.margin > 10
-  ) {
+  )
     throw new Error('The quiet zone must be an integer from 0 to 10.');
-  }
-  if (
-    opts?.sizePx !== undefined &&
-    (!Number.isInteger(opts.sizePx) || opts.sizePx <= 0)
-  ) {
+  const pixels = opts?.sizePx ?? 1024;
+  if (!Number.isInteger(pixels) || pixels <= 0)
     throw new Error('Image size must be a positive integer.');
-  }
-  let code: ReturnType<typeof QRCode.create>;
-  try {
-    code = QRCode.create(data, {
-      errorCorrectionLevel: design.errorCorrection,
-    });
-  } catch (error) {
-    // qrcode reports capacity overflow as a plain Error; preserve unrelated failures.
-    if (
-      error instanceof Error &&
-      /amount of data is too big|cannot contain this amount of data/i.test(
-        error.message,
-      )
-    ) {
-      throw new QrDataTooLongError({ cause: error });
-    }
-    throw error;
-  }
-  const { size } = code.modules;
-  const extent = size + design.margin * 2;
-  const pixels = opts?.sizePx ?? extent;
-  const bodyColor = color(
-    design.body.fill.type === 'solid'
-      ? design.body.fill.color
-      : design.body.fill.stops[0].color,
-  );
-  const frameColor = color(design.cornerFrame.color ?? bodyColor);
-  const dotColor = color(design.cornerDot.color ?? bodyColor);
-  const paths = new Map<string, string[]>();
-  for (let row = 0; row < size; row++) {
-    for (let col = 0; col < size; col++) {
-      if (!code.modules.get(row, col)) continue;
-      let fill = bodyColor;
-      for (const [x, y] of [
-        [0, 0],
-        [size - 7, 0],
-        [0, size - 7],
-      ]) {
-        const dx = col - x;
-        const dy = row - y;
-        if (dx >= 0 && dx < 7 && dy >= 0 && dy < 7) {
-          fill =
-            dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4 ? dotColor : frameColor;
-          break;
-        }
-      }
-      const commands = paths.get(fill) ?? [];
-      commands.push(`M${col + design.margin} ${row + design.margin}h1v1h-1z`);
-      paths.set(fill, commands);
-    }
-  }
+  const prefix = opts?.idPrefix ?? 'qr';
+  if (!/^[a-zA-Z_][\w.-]*$/.test(prefix))
+    throw new Error('ID prefix must be a valid SVG identifier.');
+  const matrix = createMatrix(data, design.errorCorrection);
+  const { size } = matrix;
+  const margin = design.margin;
+  const extent = size + margin * 2;
+  const paint = svgFill(design.body.fill, prefix, margin, size);
+  const box = design.logo ? logoBox(size, margin, design.logo) : undefined;
+  const cleared =
+    box && design.logo?.clearModules
+      ? { box, padding: design.logo.padding }
+      : undefined;
   const background = design.background.transparent
     ? ''
-    : `<path fill="${color(design.background.color)}" d="M0 0h${extent}v${extent}H0z"/>`;
-  const modules = [...paths]
+    : `<rect width="${extent}" height="${extent}" fill="${color(design.background.color)}"/>`;
+  const body = `<path data-qr-body="true" fill="${paint.fill}"${design.body.shape === 'square' ? ' shape-rendering="crispEdges"' : ''} d="${bodyPath(matrix, design.body.shape, margin, cleared)}"/>`;
+  const frameFill =
+    design.cornerFrame.color === null
+      ? paint.fill
+      : color(design.cornerFrame.color);
+  const dotFill =
+    design.cornerDot.color === null
+      ? paint.fill
+      : color(design.cornerDot.color);
+  const corners = [
+    [margin, margin],
+    [margin + size - 7, margin],
+    [margin, margin + size - 7],
+  ]
     .map(
-      ([fill, commands]) => `<path fill="${fill}" d="${commands.join('')}"/>`,
+      ([x, y]) =>
+        `<path fill="${frameFill}" fill-rule="evenodd" d="${cornerFramePath(design.cornerFrame.shape, x, y)}"/><path fill="${dotFill}" d="${cornerDotPath(design.cornerDot.shape, x + 2, y + 2)}"/>`,
     )
     .join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${pixels}" height="${pixels}" viewBox="0 0 ${extent} ${extent}" shape-rendering="crispEdges">${background}${modules}</svg>`;
+  let logo = '';
+  if (box && design.logo) {
+    if (
+      !/^data:image\/(?:png|jpeg|webp|svg\+xml)(?:;charset=[\w-]+)?(?:;base64)?,/i.test(
+        design.logo.src,
+      )
+    )
+      throw new Error('Logo must be an embedded image data URL.');
+    logo = `<image href="${escapeAttribute(design.logo.src)}" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" preserveAspectRatio="xMidYMid meet"/>`;
+  }
+  // Small, non-content metadata lets the browser scan wrapper explain design risks.
+  const colors = [
+    ...(design.body.fill.type === 'solid'
+      ? [design.body.fill.color]
+      : design.body.fill.stops.map((stop) => stop.color)),
+    frameFill,
+    dotFill,
+  ]
+    .filter((value) => value.startsWith('#'))
+    .map(color);
+  const metadata = `data-qr-colors="${colors.join(',')}" data-qr-background="${color(design.background.color)}" data-qr-transparent="${design.background.transparent}" data-qr-margin="${margin}" data-qr-ecc="${design.errorCorrection}" data-qr-logo-size="${box ? box.width / size : 0}" data-qr-logo-height="${box ? box.height / size : 0}" data-qr-logo-padding="${design.logo?.clearModules ? design.logo.padding / size : 0}"`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${pixels}" height="${pixels}" viewBox="0 0 ${extent} ${extent}" ${metadata}>${paint.defs}${background}${body}${corners}${logo}</svg>`;
+}
+
+type PreviewOptions = { sizePx?: number; color?: string };
+export function renderShapePreview(
+  kind: 'body',
+  shape: BodyShape,
+  opts?: PreviewOptions,
+): string;
+export function renderShapePreview(
+  kind: 'cornerFrame',
+  shape: CornerFrameShape,
+  opts?: PreviewOptions,
+): string;
+export function renderShapePreview(
+  kind: 'cornerDot',
+  shape: CornerDotShape,
+  opts?: PreviewOptions,
+): string;
+export function renderShapePreview(
+  kind: 'body' | 'cornerFrame' | 'cornerDot',
+  shape: BodyShape | CornerFrameShape | CornerDotShape,
+  opts?: PreviewOptions,
+): string {
+  const size = opts?.sizePx ?? 48;
+  if (!Number.isInteger(size) || size <= 0)
+    throw new Error('Image size must be a positive integer.');
+  let path: string;
+  if (kind === 'body') {
+    path = '';
+    for (let y = 2; y < 7; y++)
+      for (let x = 2; x < 7; x++) {
+        path += bodyModule(shape as BodyShape, x, y, [
+          y > 2,
+          x < 6,
+          y < 6,
+          x > 2,
+        ]);
+      }
+  } else if (kind === 'cornerFrame')
+    path = cornerFramePath(shape as CornerFrameShape, 1, 1);
+  else path = cornerDotPath(shape as CornerDotShape, 3, 3);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 9 9"><path fill="${color(opts?.color ?? '#000000')}" fill-rule="${kind === 'cornerFrame' ? 'evenodd' : 'nonzero'}" d="${path}"/></svg>`;
 }
