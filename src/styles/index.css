@@ -1,5 +1,15 @@
 @import 'tailwindcss';
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #27272a;
@@ -404,8 +414,7 @@ footer a {
   .preview-card {
     order: -1;
     width: 100%;
-    position: sticky;
-    top: -1px;
+    position: static;
     z-index: 2;
     padding: 16px;
     display: grid;

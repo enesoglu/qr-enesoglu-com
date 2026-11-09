@@ -128,6 +128,12 @@ export function PreviewCard() {
             Copy image
           </button>
         )}
+        {!canCopy && (
+          <p className="status">
+            Image copying is unavailable in this browser. Download the image
+            instead.
+          </p>
+        )}
         <p className="status" role="status">
           {message}
         </p>
