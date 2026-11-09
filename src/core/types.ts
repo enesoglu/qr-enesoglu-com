@@ -73,6 +73,8 @@ export interface ScanResult {
 }
 
 export interface BatchRow {
+  /** Original 1-based input line, when parsed from bulk input. */
+  line?: number;
   data: string;
   filename: string;
 }
