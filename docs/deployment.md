@@ -4,7 +4,7 @@ GitHub Actions verifies main with the reusable CI workflow, builds static files,
 
 ## Prerequisites
 
-The owner needs an administrator SSH account on the server, GitHub repository administration, and Cloudflare DNS access. Caddy v2 must already run as a host systemd service. Allow inbound TCP 80 and 443 for automatic HTTPS, and the configured SSH port (normally 22). Merge the PWA support first: production builds must contain a real `manifest.webmanifest`. The release script refuses to connect if it is missing.
+The owner needs an administrator SSH account on the server, GitHub repository administration, and Cloudflare DNS access. Caddy v2 must already run as a host systemd service. Allow inbound TCP 80 and 443 for automatic HTTPS, and the configured SSH port (normally 22). Production builds must contain a real `manifest.webmanifest`. The release script refuses to connect if it is missing.
 
 Local commands below are **PowerShell**. Commands marked server run in **bash on the VPS**. Replace placeholders privately. The administrator account used for setup is distinct from the unprivileged deployment account.
 
@@ -108,7 +108,7 @@ Remove-Item -LiteralPath $KnownHosts
 
 ## First release and routine operation
 
-After PWA support and the setup above are complete, run locally:
+After the setup above is complete, run locally:
 
 ```powershell
 gh workflow run deploy.yml --repo $Repo --ref main
@@ -149,7 +149,7 @@ Check the site with `curl.exe` locally afterward. A later main deployment replac
 - **SSH failure:** stop and inspect the first error. fail2ban bans an IP for one hour after five failed attempts in ten minutes. Do not repeatedly re-run a failing deployment. The workflow never loops SSH or rsync retries. Check the port, `AllowUsers`, key restriction, account permissions and `sudo journalctl -u ssh` through your administrator connection.
 - **Host-key mismatch:** verify the replacement key through the VPS console before updating `DEPLOY_KNOWN_HOSTS`; never disable checking.
 - **Skipped transfer:** configure all four required secrets in `production`; check branch restrictions and environment approvals.
-- **Missing manifest:** merge the PWA change and rebuild. An HTML SPA fallback is not a valid manifest.
+- **Missing manifest:** check PWA build output and rebuild. An HTML SPA fallback is not a valid manifest.
 - **403/404 or blank app:** inspect the `current` symlink and Caddy readability, ensure ancestors have execute permission, and inspect `sudo journalctl -u caddy`. Releases use directory 755/file 644 permissions. Check the browser console for CSP violations before changing policy.
 - **Certificate failure:** verify public DNS and ports 80/443; start DNS-only and use Full (strict) when proxying later. Caddy validation must pass before reload.
 - **Interrupted upload:** current is unchanged until activation. After fixing the cause, rerun once; an already-current SHA is left untouched. Smoke failures occur after activation: inspect the live release and roll back explicitly when needed.
