@@ -28,7 +28,13 @@ test('exports a decodable PNG and preserves transparent backgrounds', async ({
   page,
 }) => {
   await page.goto('/');
+  const initial = await page
+    .getByRole('img', { name: 'QR code preview' })
+    .getAttribute('src');
   await page.getByLabel('Text or URL').fill('PNG export verification');
+  await expect(
+    page.getByRole('img', { name: 'QR code preview' }),
+  ).not.toHaveAttribute('src', initial!);
   const result = await page
     .getByRole('img', { name: 'QR code preview' })
     .evaluate(async (image: HTMLImageElement) => {
