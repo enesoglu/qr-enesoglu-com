@@ -17,5 +17,5 @@
     "playwright.config.ts",
     "tests"
   ],
-  "exclude": ["node_modules", "dist", ".worktrees", ".agent"]
+  "exclude": ["node_modules", "dist", ".agent"]
 }

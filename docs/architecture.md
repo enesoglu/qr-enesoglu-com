@@ -25,7 +25,7 @@ Core has no React imports. Browser-only APIs are confined to the PNG exporter an
 
 ## Current behavior
 
-Text encoding, empty payload creation for every content kind, square SVG rendering with solid body/corner colors, background transparency, quiet zone, PNG export, and a live text preview work. Shape variants, gradients, and logos are deferred; gradients currently use their first stop. Other encoders, non-text validation, scanning, and bulk functions throw `NotImplementedError`. Zustand, PWA, ZIP, CSV, icons, and scanning dependencies are installed for extending those modules without lockfile conflicts. PWA registration and offline caching are not enabled yet.
+All content kinds encode and validate locally. Body and corner shapes, gradients, logos, transparency, quiet zone, live preview, PNG/SVG downloads and debounced scan diagnostics are connected to the renderer. Scan diagnostics load lazily and expose decoding, contrast, quiet-zone and logo warnings. Bulk generation and design persistence are pending. PWA registration and offline caching are not enabled.
 
 ## Tooling compatibility
 

@@ -9,7 +9,6 @@ export default defineConfig({
           name: 'core',
           environment: 'node',
           include: ['src/core/**/*.test.ts'],
-          exclude: ['**/.worktrees/**', '**/.agent/**'],
         },
       },
       {
@@ -18,7 +17,6 @@ export default defineConfig({
           name: 'components',
           environment: 'jsdom',
           include: ['src/**/*.test.tsx'],
-          exclude: ['**/.worktrees/**', '**/.agent/**'],
         },
       },
     ],
