@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ScanStatus } from './ScanStatus';
 import { svgToPngBlob } from '../core/export/png';
-import { RadioGroup } from '../components/Controls';
+import { ExportOptions, validPngSize } from './ExportOptions';
 import {
   encodedData,
   errorMessage,
@@ -20,7 +20,7 @@ export function downloadFilename(
 }
 export function PreviewCard() {
   const state = useAppStore();
-  const { payloads, activeKind, design, exportOptions, setExport } = state;
+  const { payloads, activeKind, design, exportOptions } = state;
   const [rendered, setRendered] = useState(() => ({
     ...previewSvg(state),
     payloads,
@@ -28,7 +28,6 @@ export function PreviewCard() {
     design,
   }));
   const [message, setMessage] = useState('');
-  const [customSize, setCustomSize] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const timer = setTimeout(
@@ -47,10 +46,7 @@ export function PreviewCard() {
     rendered.payloads !== payloads ||
     rendered.activeKind !== activeKind ||
     rendered.design !== design;
-  const validSize =
-    Number.isInteger(exportOptions.sizePx) &&
-    exportOptions.sizePx >= 64 &&
-    exportOptions.sizePx <= 8192;
+  const validSize = validPngSize(exportOptions.sizePx);
   const ready =
     !!rendered.svg &&
     !pending &&
@@ -116,60 +112,7 @@ export function PreviewCard() {
         expected={encodedData({ payloads, activeKind }).data}
       />
       <div className="export-controls">
-        <RadioGroup
-          label="Format"
-          value={exportOptions.format}
-          options={['png', 'svg']}
-          onChange={(format) => setExport({ format })}
-        />
-        {exportOptions.format === 'png' && (
-          <>
-            <label className="field">
-              PNG size
-              <select
-                value={
-                  !customSize &&
-                  [512, 1024, 2048, 4096].includes(exportOptions.sizePx)
-                    ? exportOptions.sizePx
-                    : 'custom'
-                }
-                onChange={(event) => {
-                  setCustomSize(event.target.value === 'custom');
-                  if (event.target.value === 'custom')
-                    setExport({ sizePx: 1500 });
-                  else setExport({ sizePx: Number(event.target.value) });
-                }}
-              >
-                <option value={512}>512 × 512</option>
-                <option value={1024}>1024 × 1024</option>
-                <option value={2048}>2048 × 2048</option>
-                <option value={4096}>4096 × 4096</option>
-                <option value="custom">Custom</option>
-              </select>
-            </label>
-            {customSize && (
-              <label className="field">
-                Size in pixels
-                <input
-                  type="number"
-                  min={64}
-                  max={8192}
-                  step={1}
-                  value={exportOptions.sizePx || ''}
-                  aria-invalid={!validSize}
-                  onChange={(event) =>
-                    setExport({ sizePx: Number(event.target.value) })
-                  }
-                />
-              </label>
-            )}
-            {!validSize && (
-              <small role="status">
-                Choose a whole number from 64 to 8192.
-              </small>
-            )}
-          </>
-        )}
+        <ExportOptions />
         <button
           className="primary"
           disabled={!ready}

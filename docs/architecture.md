@@ -25,7 +25,7 @@ Core has no React imports. Browser-only APIs are confined to the PNG exporter an
 
 ## Current behavior
 
-All content kinds encode and validate locally. Body and corner shapes, gradients, logos, transparency, quiet zone, live preview, PNG/SVG downloads and debounced scan diagnostics are connected to the renderer. Scan diagnostics load lazily and expose decoding, contrast, quiet-zone and logo warnings. Bulk generation and design persistence are pending. PWA registration and offline caching are not enabled.
+All content kinds encode and validate locally. Body and corner shapes, gradients, logos, transparency, quiet zone, live preview, PNG/SVG downloads and debounced scan diagnostics are connected to the renderer. Scan diagnostics load lazily and expose decoding, contrast, quiet-zone and logo warnings. Bulk mode lazy-loads CSV and ZIP tools, shares the current design and export options, previews the first row, and generates cancellable ZIP downloads with progress. Input is limited to 1000 rows. Each row yields to the event loop. Supported browsers transfer decoded SVG bitmaps to a reusable OffscreenCanvas worker for PNG drawing and encoding; SVG image loading stays on the main thread because worker SVG decoding is not portable. A worker failure disables the worker for that batch and falls back to the main-thread PNG exporter. Cancellation and unmount terminate the worker. Design persistence is pending. PWA registration and offline caching are not enabled.
 
 ## Tooling compatibility
 
